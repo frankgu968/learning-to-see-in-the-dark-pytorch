@@ -3,6 +3,7 @@ from model.model import UNet
 from dataset import LTSIDDataset
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
+import transforms as trf
 import numpy as np
 
 # test_input = torch.rand(1, 4, 512, 512)
@@ -19,6 +20,9 @@ dataset = LTSIDDataset(train_dir, truth_dir,
                         transforms=transforms.Compose([
                                                         transforms.ToTensor(),
                                                         transforms.RandomCrop(patch_size),
+                                                        transforms.RandomHorizontalFlip(p=0.5),
+                                                        transforms.RandomVerticalFlip(p=0.5),
+                                                        trf.RandomTranspose(p=0.5)
                                                       ]))
 dataloader = DataLoader(dataset, batch_size=15, shuffle=False)
 
