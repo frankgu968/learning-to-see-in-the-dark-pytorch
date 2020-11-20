@@ -22,9 +22,8 @@ def pack_raw(raw):
                         im[1:H:2, 0:W:2, :]), axis=2)
   return out
 
-
 class LTSIDDataset(Dataset):
-  def __init__(self, train_dir, truth_dir, transforms=None):
+  def __init__(self, train_dir, truth_dir, train=True, transforms=None):
     self.train_dir = train_dir
     self.truth_dir = truth_dir
     self.train_fns = glob.glob(train_dir + '0*_00*.ARW')  # All the training filenames
@@ -35,6 +34,7 @@ class LTSIDDataset(Dataset):
     self.train_truth_map = [None] * len(self.train_fns) # Array mapping a training image index to the corresponding truth index
     # Set the keys for different exposure levels
     self.load_images()
+    self.train = train
     self.transforms = transforms
 
   def load_images(self):
@@ -71,9 +71,6 @@ class LTSIDDataset(Dataset):
     }
 
     if self.transforms:
-      sample = {
-        'train': self.transforms(sample['train']),
-        'truth': self.transforms(sample['truth'])
-      }
+      sample = self.transforms(sample)
 
     return sample
