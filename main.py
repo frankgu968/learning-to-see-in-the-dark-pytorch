@@ -24,7 +24,7 @@ save_interval = 5   # epochs
 batch_size = 24
 initial_learning_rate = 1e-4
 epochs = 1000
-visualize = False
+visualize = True
 
 # Set up dataset and dataloader
 print('Loading dataset...')
@@ -91,13 +91,12 @@ for epoch in range(start_epoch, epochs):
     if idx == 0:
       if visualize:
         plt.cla()
-        output_img = outputs.batch[0].cpu().transpose(0, 2).numpy()
-        axarr[1].imshow(output_img)
-        Image.fromarray((output_img * 255).astype(np.uint8)).convert('RGB').save('test.png')
+        axarr[0].imshow(batch['truth'][0].transpose(0, 2))
+        axarr[1].imshow(outputs.data[0].cpu().transpose(0, 2))
         plt.draw()
         plt.pause(0.1)
 
-    print('Processing batch {} / {}'.format(idx, datalen))
+    print('Processing batch {} / {}'.format(idx+1, datalen))
 
   print('Epoch: %5d | Loss: %.3f' % (epoch, epoch_loss))
   if epoch % save_interval == 0:
