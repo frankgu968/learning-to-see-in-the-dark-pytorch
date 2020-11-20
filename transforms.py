@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+from matplotlib import pyplot as plt
 
 # Need to write custom transforms since the ground truth and the training images are different!
 class ToTensor(object):
@@ -9,7 +10,6 @@ class ToTensor(object):
     train, truth = sample['train'], sample['truth']
     train = torch.from_numpy(train).transpose(0, 2)  # CHW
     truth = torch.from_numpy(truth).transpose(0, 2)
-
     return {
       'train': train,
       'truth': truth,

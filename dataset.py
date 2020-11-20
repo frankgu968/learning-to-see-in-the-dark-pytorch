@@ -40,6 +40,7 @@ class LTSIDDataset(Dataset):
   def load_images(self):
     train_cnt = 0 # Index counter for the training images
     for idx, truth_fn in enumerate(self.truth_fns):
+      print('Loading {} / {} training IDs'.format(idx, len(self.truth_fns)))
       train_id = int(os.path.basename(truth_fn)[0:5])
       truth_fn = os.path.basename(truth_fn)
       train_files = glob.glob(self.train_dir + '%05d_00*.ARW' % train_id)     # Multiple training files
