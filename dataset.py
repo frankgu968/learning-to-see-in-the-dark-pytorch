@@ -1,10 +1,9 @@
 from torch.utils.data import Dataset
-import torch
 import numpy as np
 import glob
 import os
 import rawpy
-
+from pathlib import Path
 
 def pack_raw(raw):
   # pack Bayer image to 4 channels
@@ -23,27 +22,63 @@ def pack_raw(raw):
   return out
 
 class LTSIDDataset(Dataset):
-  def __init__(self, train_dir, truth_dir, train=True, transforms=None):
-    self.train_dir = train_dir
+  def __init__(self, input_dir, truth_dir, preprocess_dir, collection='train', transforms=None):
+    self.input_dir = input_dir
     self.truth_dir = truth_dir
-    self.train_fns = glob.glob(train_dir + '0*_00*.ARW')  # All the training filenames
-    self.truth_fns = glob.glob(truth_dir + '0*.ARW')  # All the ground truth filenames
-    # Pre-allocate lists for images
-    self.truth_images = [None] * len(self.truth_fns)
-    self.train_images = [None] * len(self.train_fns)
-    self.train_truth_map = [None] * len(self.train_fns) # Array mapping a training image index to the corresponding truth index
-    # Set the keys for different exposure levels
-    self.load_images()
-    self.train = train
+    self.preprocess_dir = preprocess_dir
+    self.collection = collection
     self.transforms = transforms
 
-  def load_images(self):
-    train_cnt = 0 # Index counter for the training images
+    # Load different data collections for train, test, validation split
+    self.fn_prefix = '0'
+    if collection == 'train':
+      self.fn_prefix = '0'
+    elif collection == 'test':
+      self.fn_prefix = '1'
+    elif collection == 'validation':
+      self.fn_prefix = '2'
+    else:
+      print('Unsupported dataset collection: {}. Must be in [train, test, validation]'.format(collection))
+      exit(1)
+    print('Loading dataset collection: {}'.format(collection))
+    self.input_fns = glob.glob(input_dir + self.fn_prefix + '*_00*.ARW')  # All the input image filenames
+    self.truth_fns = glob.glob(truth_dir + self.fn_prefix + '*.ARW')  # All the ground truth filenames
+    # Pre-allocate lists for images
+    self.truth_images = [None] * len(self.truth_fns)
+    self.input_images = [None] * len(self.input_fns)
+    self.input_truth_map = [None] * len(self.input_fns) # Array mapping a training image index to the corresponding truth index
+
+    # Load images
+    self.preprocess_file = self.preprocess_dir + collection + '.npy'
+    if os.path.exists(self.preprocess_file):
+      # Load existing preprocessed data
+      print('Preprocessed image file found, loading...')
+      self.load_preprocessed()
+    else:
+      print('Preprocessing images...')
+      Path(self.preprocess_dir).mkdir(exist_ok=True)
+      self.preprocess_images()
+      self.save_preprocessed()
+
+  def load_preprocessed(self):
+    load_arr = np.load(self.preprocess_file, allow_pickle=True)
+    self.truth_images = load_arr[0]
+    self.input_images = load_arr[1]
+    self.input_truth_map = load_arr[2]
+    print('Preprocessed data loaded!')
+
+  def save_preprocessed(self):
+    save_arr = np.array([self.truth_images, self.input_images, self.input_truth_map], dtype=object)
+    np.save(self.preprocess_file, save_arr)
+    print('Preprocessed data saved!')
+
+  def preprocess_images(self):
+    input_cnt = 0 # Index counter for the training images
     for idx, truth_fn in enumerate(self.truth_fns):
-      print('Loading {} / {} training IDs'.format(idx+1, len(self.truth_fns)))
-      train_id = int(os.path.basename(truth_fn)[0:5])
+      print('Preprocessing {} / {} {} IDs'.format(idx+1, len(self.truth_fns), self.collection))
+      input_id = int(os.path.basename(truth_fn)[0:5])
       truth_fn = os.path.basename(truth_fn)
-      train_files = glob.glob(self.train_dir + '%05d_00*.ARW' % train_id)     # Multiple training files
+      input_files = glob.glob(self.input_dir + '%05d_00*.ARW' % input_id) # Multiple training files
       truth_exposure = float(truth_fn[9:-5])    # Get the exposure time from the ground truth filename
 
       # Load the ground truth image
@@ -52,22 +87,22 @@ class LTSIDDataset(Dataset):
       self.truth_images[idx] = np.float32(im / 65535.0)
 
       # Load the associated training images
-      for train_fn in train_files:
-        train_fn = os.path.basename(train_fn)
-        train_exposure = float(train_fn[9:-5])
-        ratio = min(truth_exposure / train_exposure, 300)     # Calculate exposure ratio for simple scaling
-        raw = rawpy.imread(self.train_dir + train_fn)         # Load image
-        self.train_images[train_cnt] = pack_raw(raw) * ratio  # Scale the pixel values by the exposure time ratio
-        self.train_truth_map[train_cnt] = idx                 # Set the index of the corresponding ground truth image
-        train_cnt = train_cnt + 1
+      for input_fn in input_files:
+        input_fn = os.path.basename(input_fn)
+        input_exposure = float(input_fn[9:-5])
+        ratio = min(truth_exposure / input_exposure, 300)     # Calculate exposure ratio for simple scaling
+        raw = rawpy.imread(self.input_dir + input_fn)         # Load image
+        self.input_images[input_cnt] = pack_raw(raw) * ratio  # Scale the pixel values by the exposure time ratio
+        self.input_truth_map[input_cnt] = idx                 # Set the index of the corresponding ground truth image
+        input_cnt = input_cnt + 1
 
   def __len__(self):
-    return len(self.train_images)
+    return len(self.input_images)
 
   def __getitem__(self, idx):
-    truth_idx = self.train_truth_map[idx]
+    truth_idx = self.input_truth_map[idx]
     sample = {
-      'train': self.train_images[idx],
+      'train': self.input_images[idx],
       'truth': self.truth_images[truth_idx]
     }
 
