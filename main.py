@@ -23,8 +23,8 @@ patch_size = 512
 save_interval = 5   # epochs
 batch_size = 24
 initial_learning_rate = 1e-4
-epochs = 1000
-visualize = True
+epochs = 2000
+visualize = False
 
 # Set up dataset and dataloader
 print('Loading dataset...')
@@ -47,6 +47,9 @@ loss_func = nn.L1Loss()
 
 # Set up optimizer
 optimizer = optim.Adam(model.parameters(), lr=initial_learning_rate)
+
+# Learning rate scheduling
+scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=epochs/2, gamma=0.1)
 
 # Load model (if applicable)
 start_epoch = 0
@@ -71,10 +74,6 @@ print('Starting training loop...')
 datalen = len(dataloader)
 for epoch in range(start_epoch, epochs):
   print('Starting epoch: %d' % epoch)
-  if epoch > epochs / 2:
-    new_learning_rate = initial_learning_rate * 0.1
-    print('Reducing learning rate to', new_learning_rate)
-    optimizer.param_groups['lr'] = new_learning_rate # Reduce learning rate in late training
 
   epoch_loss = 0.0
   for idx, batch in enumerate(dataloader):
@@ -99,6 +98,7 @@ for epoch in range(start_epoch, epochs):
     print('Processing batch {} / {}'.format(idx+1, datalen))
 
   print('Epoch: %5d | Loss: %.3f' % (epoch, epoch_loss))
+  scheduler.step()
   if epoch % save_interval == 0:
       state = {
           'epoch': epoch,
