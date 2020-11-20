@@ -32,15 +32,12 @@ Path(output_dir).mkdir(exist_ok=True)
 counter = 0
 with torch.no_grad():
   for idx, batch in enumerate(dataloader):
-    images = batch['train'].to(device)
+    images = batch['train'][:,:,0:1024,0:1024].to(device)
     outputs = model(images)
 
     # Write to file
     for idx, output in enumerate(outputs.cpu().numpy() * 255):
       print('Processing image {}'.format(idx))
       output = np.transpose(output, (2, 1, 0)).astype('uint8')
-      ref = batch['truth'][idx]
-      ref = np.transpose(ref, (2, 1, 0)).astype('uint8')
       Image.fromarray(output).convert("RGB").save(output_dir+str(counter)+"_out.png")
-      Image.fromarray(ref).convert("RGB").save(output_dir + str(counter) + "_ref.png")
       counter = counter + 1
