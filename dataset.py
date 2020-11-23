@@ -6,20 +6,11 @@ import rawpy
 from pathlib import Path
 
 def pack_raw(raw):
-  # pack Bayer image to 4 channels
-  im = raw.raw_image_visible.astype(np.float32)
-  im = np.maximum(im - 512, 0) / (16383 - 512)  # subtract the black level
-
-  im = np.expand_dims(im, axis=2)
-  img_shape = im.shape
-  H = img_shape[0]
-  W = img_shape[1]
-
-  out = np.concatenate((im[0:H:2, 0:W:2, :],
-                        im[0:H:2, 1:W:2, :],
-                        im[1:H:2, 1:W:2, :],
-                        im[1:H:2, 0:W:2, :]), axis=2)
-  return out
+  # convert to 3 channel
+  im = raw.postprocess()
+  im = np.maximum(im - 8.0, 0) / (255 - 8)  # subtract the black level
+  im = np.float32(im)
+  return im
 
 class LTSIDDataset(Dataset):
   def __init__(self, input_dir, truth_dir, preprocess_dir, collection='train', transforms=None):
@@ -28,7 +19,7 @@ class LTSIDDataset(Dataset):
     self.preprocess_dir = preprocess_dir
     self.collection = collection
     self.transforms = transforms
-
+    
     # Load different data collections for train, test, validation split
     self.fn_prefix = '0'
     if collection == 'train':
@@ -43,9 +34,13 @@ class LTSIDDataset(Dataset):
     print('Loading dataset collection: {}'.format(collection))
     self.input_fns = glob.glob(input_dir + self.fn_prefix + '*_00*.ARW')  # All the input image filenames
     self.truth_fns = glob.glob(truth_dir + self.fn_prefix + '*.ARW')  # All the ground truth filenames
+    
+    # UNCOMMENT FOR SMALLER DEBUG DATASET
+    #self.truth_fns = self.truth_fns[0:int(len(self.truth_fns)/8)]
+    
     # Pre-allocate lists for images
     self.truth_images = [None] * len(self.truth_fns)
-    self.input_images = [None] * len(self.input_fns)
+    self.input_images = [None] * len(self.input_fns) 
     self.input_truth_map = [None] * len(self.input_fns) # Array mapping a training image index to the corresponding truth index
 
     # Load images
@@ -95,6 +90,11 @@ class LTSIDDataset(Dataset):
         self.input_images[input_cnt] = pack_raw(raw) * ratio  # Scale the pixel values by the exposure time ratio
         self.input_truth_map[input_cnt] = idx                 # Set the index of the corresponding ground truth image
         input_cnt = input_cnt + 1
+
+    # Removing extra allocated space
+    self.input_images = self.input_images[0:input_cnt]
+    self.input_truth_map = self.input_truth_map[0:input_cnt]
+
 
   def __len__(self):
     return len(self.input_images)

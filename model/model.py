@@ -9,7 +9,7 @@ class UNet(nn.Module):
     self.lrelu      = nn.LeakyReLU(0.2)
     self.maxpool    = nn.MaxPool2d(2)
 
-    self.conv1_0    = nn.Conv2d(4, 32, 3, padding=1)
+    self.conv1_0    = nn.Conv2d(3, 32, 3, padding=1)
     self.conv1_1    = nn.Conv2d(32, 32, 3, padding=1)
     self.conv2_0    = nn.Conv2d(32, 64, 3, padding=1)
     self.conv2_1    = nn.Conv2d(64, 64, 3, padding=1)
@@ -76,8 +76,7 @@ class UNet(nn.Module):
     conv8 = self.lrelu(self.conv8_1(upconv8))
     conv8 = self.lrelu(self.conv8_2(conv8))
 
-    upconv9 = self.upsample_and_concat(conv8, conv1, self.upconv9_0)
-    conv9 = self.lrelu(self.conv9_1(upconv9))
+    conv9 = self.lrelu(self.conv9_1(conv8))
     conv9 = self.lrelu(self.conv9_2(conv9))
 
     conv10 = self.conv10(conv9)
