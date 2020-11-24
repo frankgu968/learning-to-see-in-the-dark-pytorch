@@ -23,8 +23,8 @@ patch_size = 512
 save_interval = 5   # epochs
 batch_size = 24
 initial_learning_rate = 1e-4
-epochs = 2000
-visualize = False
+epochs = 4000
+visualize = True
 
 # Set up dataset and dataloader
 print('Loading dataset...')
@@ -77,7 +77,7 @@ Path(checkpoint_dir).mkdir(exist_ok=True)
 # Visualization
 axarr = {}
 if visualize:
-  _, axarr = plt.subplots(1, 2)
+  _, axarr = plt.subplots(1, 3)
   plt.show(block=False)
 
 # Training loop
@@ -102,8 +102,9 @@ for epoch in range(start_epoch, epochs):
     # Visualize current progress
     if visualize and idx == 0:
         plt.cla()
-        axarr[0].imshow(batch['truth'][0].transpose(0, 2))
-        axarr[1].imshow(outputs.data[0].cpu().transpose(0, 2))
+        axarr[0].imshow(batch['train'][0].transpose(0, 2))
+        axarr[1].imshow(batch['truth'][0].transpose(0, 2))
+        axarr[2].imshow(outputs.data[0].cpu().transpose(0, 2))
         plt.draw()
         plt.pause(0.1)
 
