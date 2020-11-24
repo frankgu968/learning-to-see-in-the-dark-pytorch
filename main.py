@@ -21,10 +21,10 @@ preprocess_dir = './data/preprocess/'
 checkpoint_path = checkpoint_dir + 'checkpoint.t7'
 patch_size = 512
 save_interval = 5   # epochs
-batch_size = 24
+batch_size = 5
 initial_learning_rate = 1e-4
 epochs = 4000
-visualize = True
+visualize = False
 
 # Set up dataset and dataloader
 print('Loading dataset...')
@@ -38,8 +38,8 @@ train_dataset = LTSIDDataset(input_dir, truth_dir, preprocess_dir=preprocess_dir
                                                         trf.RandomTranspose(p=0.5),
                                                       ]))
 
-test_dataset = LTSIDDataset(input_dir, truth_dir, preprocess_dir=preprocess_dir,
-                        collection='test',
+validation_dataset = LTSIDDataset(input_dir, truth_dir, preprocess_dir=preprocess_dir,
+                        collection='validation',
                         transforms=transforms.Compose([
                                                         trf.RandomCrop(patch_size),
                                                         trf.ToTensor(),
@@ -48,7 +48,7 @@ test_dataset = LTSIDDataset(input_dir, truth_dir, preprocess_dir=preprocess_dir,
                                                         trf.RandomTranspose(p=0.5),
                                                       ]))
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
+validation_loader = DataLoader(validation_dataset, batch_size=batch_size, shuffle=True)
 print('Dataset loaded!')
 
 # Set up model
@@ -83,7 +83,7 @@ if visualize:
 # Training loop
 print('Starting training loop...')
 train_len = len(train_loader)
-test_len = len(test_loader)
+validation_len = len(validation_loader)
 for epoch in range(start_epoch, epochs):
   print('Starting epoch: %d' % epoch)
 
@@ -111,18 +111,18 @@ for epoch in range(start_epoch, epochs):
     print('Training batch {} / {}'.format(idx+1, train_len))
   training_loss = training_loss / train_len # Scale the training loss
 
-  # Run test loop
+  # Run validation loop
   with torch.no_grad():
-    test_loss = 0.0
-    for idx, batch in enumerate(test_loader):
+    validation_loss = 0.0
+    for idx, batch in enumerate(validation_loader):
       input, truth = batch['train'].to(device), batch['truth'].to(device)
       outputs = model(input)
       loss = loss_func(outputs, truth)
-      test_loss = test_loss + loss
-      print('Testing batch {} / {}'.format(idx + 1, test_len))
-    test_loss = test_loss / test_len # Scale the test loss
+      validation_loss = validation_loss + loss
+      print('Validating batch {} / {}'.format(idx + 1, validation_len))
+    validation_loss = validation_loss / validation_len # Scale the validation loss
 
-  print('Epoch: %5d | Training Loss: %.4f | Test Loss: %.4f' % (epoch, training_loss, test_loss))
+  print('Epoch: %5d | Training Loss: %.4f | Validation Loss: %.4f' % (epoch, training_loss, validation_loss))
 
   # Update optimizer parameter(s), if applicable
   scheduler.step()

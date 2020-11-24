@@ -26,12 +26,12 @@ class LTSIDDataset(Dataset):
     self.fn_prefix = '0'
     if collection == 'train':
       self.fn_prefix = '0'
-    elif collection == 'test':
-      self.fn_prefix = '1'
     elif collection == 'validation':
+      self.fn_prefix = '1'
+    elif collection == 'test':
       self.fn_prefix = '2'
     else:
-      print('Unsupported dataset collection: {}. Must be in [train, test, validation]'.format(collection))
+      print('Unsupported dataset collection: {}. Must be in [train, validation, test]'.format(collection))
       exit(1)
     print('Loading dataset collection: {}'.format(collection))
     self.input_fns = glob.glob(input_dir + self.fn_prefix + '*_00*.ARW')  # All the input image filenames
