@@ -83,7 +83,7 @@ class RandomCrop(object):
     yy = np.random.randint(0, H - ps)
 
     train = train[yy:yy + ps, xx:xx + ps, :]
-    truth = truth[yy:yy + ps, xx:xx + ps, :]
+    truth = truth[yy * 2:yy * 2 + ps * 2, xx * 2:xx * 2 + ps * 2, :]
 
     return {
       'train': train, 

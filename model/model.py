@@ -76,7 +76,8 @@ class UNet(nn.Module):
     conv8 = self.lrelu(self.conv8_1(upconv8))
     conv8 = self.lrelu(self.conv8_2(conv8))
 
-    conv9 = self.lrelu(self.conv9_1(conv8))
+    upconv9 = self.upsample_and_concat(conv8, conv1, self.upconv9_0)
+    conv9 = self.lrelu(self.conv9_1(upconv9))
     conv9 = self.lrelu(self.conv9_2(conv9))
 
     conv10 = self.conv10(conv9)

@@ -8,13 +8,9 @@ import cv2
 
 def pack_raw(raw):
   # convert to 3 channel
-  im = raw.postprocess()
-  im = np.maximum(im - 8.0, 0) / (255 - 8)  # subtract the black level
-  im = np.float32(im)
-
-  W = int(im.shape[1]/2)
-  H = int(im.shape[0]/2)
-  im = cv2.resize(im, (W,H), interpolation=cv2.INTER_LINEAR)
+  im = raw.postprocess(half_size=True, output_bps=16)
+  im = np.maximum(im - 2047.0, 0) / (65535.0 - 2047.0)  # subtract the black level
+  im = im.astype(np.float32)
 
   return im
 
@@ -85,7 +81,7 @@ class LTSIDDataset(Dataset):
       # Load the ground truth image
       truth_raw = rawpy.imread(self.truth_dir + truth_fn)
       im = truth_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
-      self.truth_images[idx] = np.float32(im / 65535.0)
+      self.truth_images[idx] = (im/65535.0).astype(np.float32)
 
       # Load the associated training images
       for input_fn in input_files:
