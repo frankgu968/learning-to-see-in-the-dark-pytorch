@@ -4,12 +4,18 @@ import glob
 import os
 import rawpy
 from pathlib import Path
+import cv2
 
 def pack_raw(raw):
   # convert to 3 channel
   im = raw.postprocess()
   im = np.maximum(im - 8.0, 0) / (255 - 8)  # subtract the black level
   im = np.float32(im)
+
+  W = int(im.shape[1]/2)
+  H = int(im.shape[0]/2)
+  im = cv2.resize(im, (W,H), interpolation=cv2.INTER_LINEAR)
+
   return im
 
 class LTSIDDataset(Dataset):
