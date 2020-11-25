@@ -57,7 +57,7 @@ def predict():
             output = output.squeeze()
             output = np.transpose(output, (2, 1, 0)).astype('uint8')
             output = Image.fromarray(output).convert("RGB")
-            output.show()
+            #output.show()
 
             # Output buffer for upload to S3
             buffer = io.BytesIO()            
@@ -69,4 +69,5 @@ def predict():
                 ContentType='image/png',
             )
 
-            print("Upload to S3 Complete")
+        return "Upload to S3 Complete"
+        
