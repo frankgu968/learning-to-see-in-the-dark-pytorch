@@ -17,7 +17,7 @@ checkpoint_path = './checkpoint/checkpoint.t7'
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 dataset = LTSIDDataset(raw_dir, truth_dir, preprocess_dir=preprocess_dir,
-                        collection='validation',
+                        collection='test',
                         transforms=transforms.Compose([trf.ToTensor()]))
 dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=False)
 

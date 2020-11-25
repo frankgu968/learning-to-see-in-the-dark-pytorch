@@ -15,9 +15,10 @@ def pack_raw(raw):
   return im
 
 class LTSIDDataset(Dataset):
-  def __init__(self, input_dir, truth_dir, preprocess_dir, collection='train', transforms=None):
+  def __init__(self, input_dir, truth_dir, preprocess, preprocess_dir, collection='train', transforms=None):
     self.input_dir = input_dir
     self.truth_dir = truth_dir
+    self.preprocess = preprocess
     self.preprocess_dir = preprocess_dir
     self.collection = collection
     self.transforms = transforms
@@ -47,7 +48,7 @@ class LTSIDDataset(Dataset):
 
     # Load images
     self.preprocess_file = self.preprocess_dir + collection + '.npy'
-    if os.path.exists(self.preprocess_file):
+    if os.path.exists(self.preprocess_file) & ~self.preprocess:
       # Load existing preprocessed data
       print('Preprocessed image file found, loading...')
       self.load_preprocessed()
