@@ -134,3 +134,6 @@ checkpoint/
 .ipynb_checkpoints/
 test.ipynb
 output/
+
+#config
+TrainConfig.yaml

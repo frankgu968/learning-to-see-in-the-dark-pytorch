@@ -1,10 +1,10 @@
 import torch
 from torch.utils.data import DataLoader
-from dataset import pack_raw
-import transforms as trf
+from app.dataset import pack_raw
+import app.transforms as trf
 import torchvision.transforms as transforms
 from PIL import Image
-from model.model import UNet
+from app.model.model import UNet
 from pathlib import Path
 import numpy as np
 import rawpy
@@ -36,19 +36,7 @@ if __name__ == '__main__':
     # image import
     raw = rawpy.imread(image_path) 
     im = pack_raw(raw) * ratio
-
-    # scaling image down to a max dimension of 1024, maintaining aspect ratio
-    if max(im.shape) > 1024:
-        scale_factor = 1024 / max(im.shape)
-        H = int(im.shape[0] * scale_factor)
-        W = int(im.shape[1] * scale_factor)
-        im = cv2.resize(im, (W,H), cv2.INTER_AREA)
-
-
-    # cropping image to nearest 16, to allow torch to compute
-    H = math.floor(im.shape[0]/16.0)*16
-    W = math.floor(im.shape[1]/16.0)*16
-    im = im[:H, :W, :]
+    im = inferTransform(im)
 
     # transpose and add dummy sample dimension
     tensor = torch.from_numpy(im).transpose(0, 2).unsqueeze(0)
@@ -63,3 +51,18 @@ if __name__ == '__main__':
         output.show()
         output.save(output_path)
         
+def inferTransform(im):
+    # scaling image down to a max dimension of 1024, maintaining aspect ratio
+    if max(im.shape) > 1024:
+        scale_factor = 1024 / max(im.shape)
+        H = int(im.shape[0] * scale_factor)
+        W = int(im.shape[1] * scale_factor)
+        im = cv2.resize(im, (W,H), cv2.INTER_AREA)
+
+
+    # cropping image to nearest 16, to allow torch to compute
+    H = math.floor(im.shape[0]/16.0)*16
+    W = math.floor(im.shape[1]/16.0)*16
+    im = im[:H, :W, :]
+
+    return im
