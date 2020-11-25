@@ -8,7 +8,7 @@ from model.model import UNet
 from pathlib import Path
 import numpy as np
 
-batch_size = 2
+batch_size = 1
 raw_dir = './data/inference/input/'
 truth_dir = './data/inference/reference/'
 preprocess_dir = './data/inference/'
