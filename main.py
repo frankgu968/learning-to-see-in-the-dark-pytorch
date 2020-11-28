@@ -1,5 +1,6 @@
 import torch
 from model.model import UNet
+from model.loss import perceptual_loss
 from dataset import LTSIDDataset
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
@@ -21,7 +22,7 @@ if __name__ == "__main__":
     config_file = 'defaultTrainConfig.yaml' # Use default config
 
   with open(config_file, "r") as ymlfile:
-    yml_file = yaml.load(ymlfile)
+    yml_file = yaml.safe_load(ymlfile)
   cfg = Config(yml_file)
 
   np.random.seed(0) # Deterministic random
@@ -56,7 +57,8 @@ if __name__ == "__main__":
   model = UNet().to(device)
 
   # Set up loss function
-  loss_func = nn.L1Loss()
+  # loss_func = nn.L1Loss()
+  loss_func = perceptual_loss(perceptual_model='vgg16', dist_func=nn.MSELoss(), device=device)
 
   # Set up optimizer
   optimizer = optim.Adam(model.parameters(), lr=cfg.initial_learning_rate)
