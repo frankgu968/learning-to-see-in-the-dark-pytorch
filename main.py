@@ -113,6 +113,7 @@ if __name__ == "__main__":
         print('Validating batch {} / {}'.format(idx + 1, validation_len))
 
         if idx == 0:
+          print("Saving images to tensorboard...")
           writer.add_image('input', input[0], epoch)
           writer.add_image('output', outputs.data[0].cpu(), epoch)
           writer.add_image('ground truth', truth[0], epoch)
