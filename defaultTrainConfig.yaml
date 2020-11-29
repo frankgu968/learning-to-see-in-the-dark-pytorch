@@ -10,4 +10,4 @@ batch_size: 24
 initial_learning_rate: 1e-4
 epochs: 4000
 visualize: False
-num_workers: 6
+num_workers: 1
