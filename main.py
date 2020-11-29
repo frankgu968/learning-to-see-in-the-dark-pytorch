@@ -27,6 +27,7 @@ class Config:
     self.initial_learning_rate = float(cfg['initial_learning_rate'])
     self.epochs = int(cfg['epochs'])
     self.visualize = bool(cfg['visualize'])
+    self.num_workers = int(cfg['num_workers'])
 
 
 if __name__ == "__main__":
@@ -63,8 +64,8 @@ if __name__ == "__main__":
                                                           trf.RandomVerticalFlip(p=0.5),
                                                           trf.RandomTranspose(p=0.5),
                                                         ]))
-  train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
-  validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True)
+  train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
+  validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True, num_workers=cfg.num_workers)
   print('Dataset loaded!')
 
   # Set up model
