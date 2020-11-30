@@ -86,6 +86,10 @@ if __name__ == "__main__":
   validation_len = len(validation_loader)
   for epoch in range(start_epoch, cfg.epochs):
     print('Starting epoch: %d' % epoch)
+  
+    if epoch > 750:
+      print("Using L1 Loss")
+      loss_func = nn.L1Loss()
 
     # Run training loop
     training_loss = 0.0
