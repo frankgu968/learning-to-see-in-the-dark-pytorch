@@ -2,6 +2,7 @@
 input_dir: ./data/short/
 truth_dir: ./data/long/
 checkpoint_dir: ./checkpoint/
+output_dir: ./output/
 preprocess: False #Set to True to force preprocessing
 preprocess_dir: ./data/preprocess/
 patch_size: 512
