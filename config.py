@@ -3,6 +3,7 @@ class Config:
     self.input_dir = cfg['input_dir']
     self.truth_dir = cfg['truth_dir']
     self.checkpoint_dir = cfg['checkpoint_dir']
+    self.output_dir = cfg['output_dir']
     self.preprocess = bool(cfg['preprocess'])
     self.preprocess_dir = cfg['preprocess_dir']
     self.checkpoint_path = self.checkpoint_dir + 'checkpoint.t7'
