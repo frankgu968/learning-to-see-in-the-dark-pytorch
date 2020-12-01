@@ -1,3 +1,4 @@
 rawpy
 matplotlib
 pillow
+tensorboard

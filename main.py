@@ -9,26 +9,11 @@ import torch.optim as optim
 import torch.nn as nn
 import os.path
 from pathlib import Path
-from matplotlib import pyplot as plt
 import sys
 import yaml
 from apex import amp
-
-class Config:
-  def __init__(self, cfg):
-    self.input_dir = cfg['input_dir']
-    self.truth_dir = cfg['truth_dir']
-    self.checkpoint_dir = cfg['checkpoint_dir']
-    self.preprocess = bool(cfg['preprocess'])
-    self.preprocess_dir = cfg['preprocess_dir']
-    self.checkpoint_path = self.checkpoint_dir + 'checkpoint.t7'
-    self.patch_size = int(cfg['patch_size'])
-    self.save_interval = int(cfg['save_interval'])   # epochs
-    self.batch_size = int(cfg['batch_size'])
-    self.initial_learning_rate = float(cfg['initial_learning_rate'])
-    self.epochs = int(cfg['epochs'])
-    self.visualize = bool(cfg['visualize'])
-
+from torch.utils.tensorboard import SummaryWriter
+from config import Config
 
 if __name__ == "__main__":
   try:
@@ -84,6 +69,9 @@ if __name__ == "__main__":
   # Learning rate scheduling
   scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.epochs/2, gamma=0.1)
 
+  # Set up TensorBoard writer
+  writer = SummaryWriter('runs/'+cfg.run_name, flush_secs=1)
+
   # Load model (if applicable)
   start_epoch = 0
   if os.path.exists(cfg.checkpoint_path):
@@ -95,12 +83,6 @@ if __name__ == "__main__":
 
   # Make model checkpoint dir
   Path(cfg.checkpoint_dir).mkdir(exist_ok=True)
-
-  # Visualization
-  axarr = {}
-  if cfg.visualize:
-    _, axarr = plt.subplots(1, 3)
-    plt.show(block=False)
 
   # Training loop
   print('Starting training loop...')
@@ -125,15 +107,6 @@ if __name__ == "__main__":
 
       training_loss = training_loss + loss
 
-      # Visualize current progress
-      if cfg.visualize and idx == 0:
-          plt.cla()
-          axarr[0].imshow(batch['train'][0].transpose(0, 2))
-          axarr[1].imshow(batch['truth'][0].transpose(0, 2))
-          axarr[2].imshow(outputs.data[0].cpu().transpose(0, 2))
-          plt.draw()
-          plt.pause(0.1)
-
       print('Training batch {} / {}'.format(idx+1, train_len))
     training_loss = training_loss / train_len # Scale the training loss
 
@@ -146,9 +119,21 @@ if __name__ == "__main__":
         loss = loss_func(outputs, truth)
         validation_loss = validation_loss + loss
         print('Validating batch {} / {}'.format(idx + 1, validation_len))
+
+        if idx == 0:
+          writer.add_image('input', input[0], epoch)
+          writer.add_image('output', outputs.data[0].cpu(), epoch)
+          writer.add_image('ground truth', truth[0], epoch)
       validation_loss = validation_loss / validation_len # Scale the validation loss
 
     print('Epoch: %5d | Training Loss: %.4f | Validation Loss: %.4f' % (epoch, training_loss, validation_loss))
+    # Write to TensorBoard
+    writer.add_scalar('training loss',
+                      training_loss,
+                      epoch)
+    writer.add_scalar('validation loss',
+                      validation_loss,
+                      epoch)
 
     # Update optimizer parameter(s), if applicable
     scheduler.step()
@@ -165,3 +150,5 @@ if __name__ == "__main__":
         print('Saved state to ', cfg.checkpoint_path)
 
   print('Training complete!')
+
+

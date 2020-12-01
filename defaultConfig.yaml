@@ -1,11 +1,12 @@
 input_dir: ./data/short/
 truth_dir: ./data/long/
 checkpoint_dir: ./checkpoint/
+output_dir: ./output/
 preprocess: False #Set to True to force preprocessing
-preprocess_dir: ./data/preprocess/ 
+preprocess_dir: ./data/preprocess/
 patch_size: 512
 save_interval: 5   # epochs
 batch_size: 24
 initial_learning_rate: 1e-4
 epochs: 4000
-visualize: False
+run_name: perceptual_loss_1 # The name of the current run/experiment
