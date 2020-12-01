@@ -39,7 +39,7 @@ class LTSIDDataset(Dataset):
     self.truth_fns = glob.glob(truth_dir + self.fn_prefix + '*.ARW')  # All the ground truth filenames
     
     # UNCOMMENT FOR SMALLER DEBUG DATASET
-    # self.truth_fns = self.truth_fns[0:int(len(self.truth_fns)/8)]
+    #self.truth_fns = self.truth_fns[0:int(len(self.truth_fns)/8)]
     
     # Pre-allocate lists for images
     self.truth_images = [None] * len(self.truth_fns)
