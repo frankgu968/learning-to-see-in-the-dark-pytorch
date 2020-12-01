@@ -67,7 +67,7 @@ if __name__ == "__main__":
   # Set up TensorBoard writer
   writer = SummaryWriter('runs/'+cfg.run_name, flush_secs=1)
 
-  # Load model (if applicable)
+  # Load model (if applicable) - by default load the latest 
   start_epoch = 0
   if os.path.exists(cfg.checkpoint_path):
     checkpoint = torch.load(cfg.checkpoint_path)
@@ -135,6 +135,8 @@ if __name__ == "__main__":
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }
+
+        # Code here
         torch.save(state, cfg.checkpoint_path)
         print('Saved state to ', cfg.checkpoint_path)
 
