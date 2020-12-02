@@ -35,7 +35,7 @@ if __name__ == "__main__":
   # Set up loss function
   loss_func = nn.L1Loss()
 
-  checkpoint = torch.load(cfg.checkpoint_path)
+  checkpoint = torch.load(cfg.checkpoint_to_load)
   model.load_state_dict(checkpoint['state_dict'])
 
   # Make model checkpoint dir

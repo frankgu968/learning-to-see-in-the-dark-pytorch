@@ -14,11 +14,12 @@ import yaml
 from torch.utils.tensorboard import SummaryWriter
 from config import Config
 
+
 if __name__ == "__main__":
   try:
     config_file = sys.argv[1] # Check for supplied config
   except:
-    config_file = 'defaultTrainConfig.yaml' # Use default config
+    config_file = 'defaultConfig.yaml' # Use default config
 
   with open(config_file, "r") as ymlfile:
     yml_file = yaml.load(ymlfile)
@@ -67,10 +68,10 @@ if __name__ == "__main__":
   # Set up TensorBoard writer
   writer = SummaryWriter('runs/'+cfg.run_name, flush_secs=1)
 
-  # Load model (if applicable)
+  # Load model (if applicable) - by default load the latest 
   start_epoch = 0
-  if os.path.exists(cfg.checkpoint_path):
-    checkpoint = torch.load(cfg.checkpoint_path)
+  if os.path.exists(cfg.checkpoint_to_load):
+    checkpoint = torch.load(cfg.checkpoint_to_load)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
     start_epoch = checkpoint['epoch']
@@ -78,12 +79,17 @@ if __name__ == "__main__":
   # Make model checkpoint dir
   Path(cfg.checkpoint_dir).mkdir(exist_ok=True)
 
+  # Track "Best" Checkpoint
+  best_validation_loss = 100000.0
+  golden_epoch = False
+
   # Training loop
   print('Starting training loop...')
   train_len = len(train_loader)
   validation_len = len(validation_loader)
   for epoch in range(start_epoch, cfg.epochs):
     print('Starting epoch: %d' % epoch)
+    golden_epoch = False   
 
     # Run training loop
     training_loss = 0.0
@@ -116,6 +122,11 @@ if __name__ == "__main__":
           writer.add_image('ground truth', truth[0], epoch)
       validation_loss = validation_loss / validation_len # Scale the validation loss
 
+      if(validation_loss < best_validation_loss and epoch % cfg.save_interval == 0):
+        best_validation_loss = validation_loss
+        golden_epoch = True
+      
+
     print('Epoch: %5d | Training Loss: %.4f | Validation Loss: %.4f' % (epoch, training_loss, validation_loss))
     # Write to TensorBoard
     writer.add_scalar('training loss',
@@ -135,9 +146,15 @@ if __name__ == "__main__":
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
         }
-        torch.save(state, cfg.checkpoint_path)
-        print('Saved state to ', cfg.checkpoint_path)
 
+        # Keep the best epoch
+        checkpoint_path = cfg.checkpoint_path
+        if (golden_epoch):
+            print('Best Epoch seen so far with validation loss of %.4f ' % (best_validation_loss))
+            checkpoint_path = cfg.checkpoint_dir + 'best.t7'
+            
+        torch.save(state, checkpoint_path)
+        print('Saved state to ', checkpoint_path)
 
 
   print('Training complete!')
