@@ -1,3 +1,6 @@
+input_dir: ./data/short/
+truth_dir: ./data/long/
+checkpoint_dir: ./checkpoint/
 input_dir: /data/short/
 truth_dir: /data/long/
 checkpoint_dir: /data/checkpoint/

@@ -1,0 +1,13 @@
+input_dir: /data/Sony/short/
+truth_dir: /data/Sony/long/
+checkpoint_dir: /data/checkpoint/
+output_dir: ./output/
+preprocess: False #Set to True to force preprocessing
+preprocess_dir: /data/preprocess/
+patch_size: 512
+save_interval: 5   # epochs
+batch_size: 14
+initial_learning_rate: 1e-4
+epochs: 4000
+visualize: False
+run_name: mixed_precision
