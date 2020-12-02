@@ -6,7 +6,8 @@ class Config:
     self.output_dir = cfg['output_dir']
     self.preprocess = bool(cfg['preprocess'])
     self.preprocess_dir = cfg['preprocess_dir']
-    self.checkpoint_path = self.checkpoint_dir + 'checkpoint.t7'
+    self.checkpoint_path = self.checkpoint_dir + 'latest.t7'
+    self.checkpoint_to_load = self.checkpoint_dir + str(cfg['checkpoint_to_load'])
     self.patch_size = int(cfg['patch_size'])
     self.save_interval = int(cfg['save_interval'])   # epochs
     self.batch_size = int(cfg['batch_size'])
