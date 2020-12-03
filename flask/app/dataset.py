@@ -8,8 +8,12 @@ import cv2
 
 def pack_raw(raw):
   # convert to 3 channel
+  print(raw)
+  print("RawPy Process")
   im = raw.postprocess(half_size=True, output_bps=16)
+  print("Filter Black")
   im = np.maximum(im - 2047.0, 0) / (65535.0 - 2047.0)  # subtract the black level
+  print("Cast to Float32")
   im = im.astype(np.float32)
 
   return im

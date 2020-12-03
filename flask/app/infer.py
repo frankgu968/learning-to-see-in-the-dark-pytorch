@@ -52,9 +52,9 @@ if __name__ == '__main__':
         output.save(output_path)
         
 def inferTransform(im):
-    # scaling image down to a max dimension of 1024, maintaining aspect ratio
-    if max(im.shape) > 1024:
-        scale_factor = 1024 / max(im.shape)
+    # scaling image down to a max dimension of 512, maintaining aspect ratio
+    if max(im.shape) > 512:
+        scale_factor = 512 / max(im.shape)
         H = int(im.shape[0] * scale_factor)
         W = int(im.shape[1] * scale_factor)
         im = cv2.resize(im, (W,H), cv2.INTER_AREA)

@@ -1,0 +1,9 @@
+numpy
+pillow
+matplotlib
+flask
+opencv-python
+rawpy
+boto3
+
+
