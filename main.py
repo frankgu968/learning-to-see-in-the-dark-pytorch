@@ -112,10 +112,12 @@ if __name__ == "__main__":
       outputs = model(train)
       loss = loss_func(outputs, truth)
 
-      # Amp handles mixed precision
+      # Amp handles mixed precision loss function
       if cfg.mixed_precision:
         with amp.scale_loss(loss, optimizer) as scaled_loss:
           scaled_loss.backward()
+      else:
+        loss.backward()
 
       optimizer.step()
 
