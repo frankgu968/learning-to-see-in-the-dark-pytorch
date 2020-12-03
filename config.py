@@ -14,3 +14,4 @@ class Config:
     self.initial_learning_rate = float(cfg['initial_learning_rate'])
     self.epochs = int(cfg['epochs'])
     self.run_name = cfg['run_name']
+    self.mixed_precision = bool(cfg['mixed_precision'])

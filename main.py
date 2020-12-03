@@ -12,10 +12,8 @@ import os.path
 from pathlib import Path
 import sys
 import yaml
-from apex import amp
 from torch.utils.tensorboard import SummaryWriter
 from config import Config
-
 
 if __name__ == "__main__":
   try:
@@ -52,7 +50,7 @@ if __name__ == "__main__":
                                                           trf.RandomTranspose(p=0.5),
                                                         ]))
   train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
-  validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True,)
+  validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True)
   print('Dataset loaded!')
 
   # Set up model
@@ -65,9 +63,10 @@ if __name__ == "__main__":
   # Set up optimizer
   optimizer = optim.Adam(model.parameters(), lr=cfg.initial_learning_rate)
 
-
   # Experiment with 16-bit precision
-  amp.initialize(model, optimizer, opt_level='O2')
+  if cfg.mixed_precision:
+    from apex import amp # HACK: fix this later!
+    amp.initialize(model, optimizer, opt_level='O2')
 
   # Learning rate scheduling
   scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.epochs/2, gamma=0.1)
@@ -81,8 +80,9 @@ if __name__ == "__main__":
     checkpoint = torch.load(cfg.checkpoint_to_load)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    amp.load_state_dict(checkpoint['amp'])
     start_epoch = checkpoint['epoch']
+    if cfg.mixed_precision:
+      amp.load_state_dict(checkpoint['amp'])
 
   # Make model checkpoint dir
   Path(cfg.checkpoint_dir).mkdir(exist_ok=True)
@@ -113,8 +113,9 @@ if __name__ == "__main__":
       loss = loss_func(outputs, truth)
 
       # Amp handles mixed precision
-      with amp.scale_loss(loss, optimizer) as scaled_loss:
-        scaled_loss.backward()
+      if cfg.mixed_precision:
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+          scaled_loss.backward()
 
       optimizer.step()
 
@@ -160,11 +161,12 @@ if __name__ == "__main__":
     # Save model
     if epoch % cfg.save_interval == 0:
         state = {
-            'epoch': epoch,
-            'state_dict': model.state_dict(),
-            'optimizer': optimizer.state_dict(),
-            'amp': amp.state_dict()
+          'epoch': epoch,
+          'state_dict': model.state_dict(),
+          'optimizer': optimizer.state_dict()
         }
+        if cfg.mixed_precision:
+          state['amp'] = amp.state_dict()
 
         # Keep the best epoch
         checkpoint_path = cfg.checkpoint_path

@@ -43,7 +43,8 @@ class LTSIDDataset(Dataset):
     
     # Pre-allocate lists for images
     self.truth_images = [None] * len(self.truth_fns)
-    self.input_images = [None] * len(self.input_fns) 
+    self.truth_resized_images = [None] * len(self.truth_fns) # Resized ground truth images for bright image training
+    self.input_images = [None] * len(self.input_fns)
     self.input_truth_map = [None] * len(self.input_fns) # Array mapping a training image index to the corresponding truth index
 
     # Load images
@@ -63,10 +64,11 @@ class LTSIDDataset(Dataset):
     self.truth_images = load_arr[0]
     self.input_images = load_arr[1]
     self.input_truth_map = load_arr[2]
+    self.truth_resized_images = load_arr[3]
     print('Preprocessed data loaded!')
 
   def save_preprocessed(self):
-    save_arr = np.array([self.truth_images, self.input_images, self.input_truth_map], dtype=object)
+    save_arr = np.array([self.truth_images, self.input_images, self.input_truth_map, self.truth_resized_images], dtype=object)
     np.save(self.preprocess_file, save_arr)
     print('Preprocessed data saved!')
 
@@ -82,7 +84,9 @@ class LTSIDDataset(Dataset):
       # Load the ground truth image
       truth_raw = rawpy.imread(self.truth_dir + truth_fn)
       im = truth_raw.postprocess(use_camera_wb=True, half_size=False, no_auto_bright=True, output_bps=16)
+      im_resized = truth_raw.postprocess(use_camera_wb=True, half_size=True, no_auto_bright=True, output_bps=16)
       self.truth_images[idx] = (im/65535.0).astype(np.float32)
+      self.truth_resized_images[idx] = (im_resized/65535.0).astype(np.float32)
 
       # Load the associated training images
       for input_fn in input_files:
@@ -100,14 +104,23 @@ class LTSIDDataset(Dataset):
 
 
   def __len__(self):
-    return len(self.input_images)
+    return len(self.input_images + self.truth_images)
 
   def __getitem__(self, idx):
-    truth_idx = self.input_truth_map[idx]
-    sample = {
-      'train': self.input_images[idx],
-      'truth': self.truth_images[truth_idx]
-    }
+    if idx < len(self.input_images):
+      # Images that are dark and require brightening
+      truth_idx = self.input_truth_map[idx]
+      sample = {
+        'train': self.input_images[idx],
+        'truth': self.truth_images[truth_idx]
+      }
+    else:
+      # Images that are bright (ie. ground truth) that require not brightening
+      img_idx = idx - len(self.input_images)
+      sample = {
+        'train': self.truth_resized_images[img_idx],
+        'truth': self.truth_images[img_idx]
+      }
 
     if self.transforms:
       sample = self.transforms(sample)
