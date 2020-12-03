@@ -1,5 +1,6 @@
 import torch
 from model.model import UNet
+from model.loss import perceptual_loss
 from dataset import LTSIDDataset
 from torch.utils.data import DataLoader
 import torchvision.transforms as transforms
@@ -23,7 +24,7 @@ if __name__ == "__main__":
     config_file = 'defaultConfig.yaml' # Use default config
 
   with open(config_file, "r") as ymlfile:
-    yml_file = yaml.load(ymlfile)
+    yml_file = yaml.safe_load(ymlfile)
   cfg = Config(yml_file)
 
   np.random.seed(0) # Deterministic random
@@ -59,6 +60,7 @@ if __name__ == "__main__":
 
   # Set up loss function
   loss_func = nn.L1Loss()
+  # loss_func = perceptual_loss(perceptual_model='vgg16', dist_func=nn.MSELoss(), device=device) # Perceptual loss
 
   # Set up optimizer
   optimizer = optim.Adam(model.parameters(), lr=cfg.initial_learning_rate)
@@ -96,6 +98,11 @@ if __name__ == "__main__":
   for epoch in range(start_epoch, cfg.epochs):
     print('Starting epoch: %d' % epoch)
     golden_epoch = False   
+  
+    # Loss function schedule (if applicable)
+    # if epoch > 750:
+    #   print("Using L1 Loss")
+    #   loss_func = nn.L1Loss()
 
     # Run training loop
     training_loss = 0.0
@@ -127,6 +134,7 @@ if __name__ == "__main__":
         print('Validating batch {} / {}'.format(idx + 1, validation_len))
 
         if idx == 0:
+          print("Saving images to tensorboard...")
           writer.add_image('input', input[0], epoch)
           writer.add_image('output', outputs.data[0].cpu(), epoch)
           writer.add_image('ground truth', truth[0], epoch)
