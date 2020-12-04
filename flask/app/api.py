@@ -18,7 +18,7 @@ session = boto3.Session(
     region_name = os.environ['AWS_REGION']
 )
 
-checkpoint_path = '../checkpoint/checkpoint.t7'
+checkpoint_path = 'checkpoint/checkpoint.t7'
 
 # Setting Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -53,13 +53,18 @@ def predict():
         # image = response['Body']
         print("Image Imported")
 
-        # Rawpy processing and transofrmation
+        # Read and Transform
         print("Read Image")
+        image = np.asarray(Image.open(image))
               
-        rint("Begin Pack Raw")
-        with rawpy.imread(image) as raw: 
-            im = pack_raw(raw) * ratio
-            
+        print("Filter Black")
+        im = np.maximum(image - 0.0, 0) / (255.0 - 0.0)  # subtract the black level
+        
+        print("Cast to Float32")
+        im = im.astype(np.float32)
+
+        print("Multiply by Ratio")
+        im *= ratio
 
         print("Transform Image")
         im = inferTransform(im)

@@ -137,3 +137,6 @@ output/
 
 #config
 TrainConfig.yaml
+
+# vs code
+.vscode
