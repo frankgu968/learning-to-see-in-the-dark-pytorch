@@ -10,6 +10,7 @@ from PIL import Image
 import boto3
 import io
 import os
+from multiprocessing import Process
 
 # AWS Session
 session = boto3.Session(
@@ -21,7 +22,8 @@ session = boto3.Session(
 checkpoint_path = '../checkpoint/checkpoint.t7'
 
 # Setting Device
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = 'cpu'
 
 # load model
 model = UNet().to(device)
@@ -53,14 +55,19 @@ def predict():
         # image = response['Body']
         print("Image Imported")
 
+
         # Rawpy processing and transofrmation
         print("Read Image")
-        
+              
         print(image)
-        raw = rawpy.imread(image) 
-        
+        with rawpy.imread(image) as raw: 
+            im = Process(target=pack_raw, args=(raw,))
+            im.start()
+            im.join()
+            #im = pack_raw(raw) * ratio
+
         print("Begin Pack Raw")
-        im = pack_raw(raw) * ratio
+        #im = pack_raw(raw) * ratio
         
         print("Transform Image")
         im = inferTransform(im)
