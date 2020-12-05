@@ -10,6 +10,9 @@ from PIL import Image
 import boto3
 import io
 import os
+#import manhole
+
+#manhole.install(patch_fork=False, daemon_connection=True)
 
 # AWS Session
 session = boto3.Session(
@@ -18,7 +21,7 @@ session = boto3.Session(
     region_name = os.environ['AWS_REGION']
 )
 
-checkpoint_path = 'checkpoint/checkpoint.t7'
+checkpoint_path = '../checkpoint/checkpoint.t7'
 
 # Setting Device
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -47,18 +50,19 @@ def predict():
         object = s3.Object(bucketName, inputImage)
         
         image = io.BytesIO()
+
         object.download_fileobj(image)
         image.seek(0)
 
         # image = response['Body']
         print("Image Imported")
 
-        # Read and Transform
+        # Read and Transformten
         print("Read Image")
-        image = np.asarray(Image.open(image))
+        im = np.asarray(Image.open(image))
               
         print("Filter Black")
-        im = np.maximum(image - 0.0, 0) / (255.0 - 0.0)  # subtract the black level
+        im = np.maximum(im - 0.0, 0) / (255.0 - 0.0)  # subtract the black level
         
         print("Cast to Float32")
         im = im.astype(np.float32)
