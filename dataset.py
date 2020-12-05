@@ -94,7 +94,7 @@ class LTSIDDataset(Dataset):
         input_exposure = float(input_fn[9:-5])
         ratio = min(truth_exposure / input_exposure, 300)     # Calculate exposure ratio for simple scaling
         raw = rawpy.imread(self.input_dir + input_fn)         # Load image
-        self.input_images[input_cnt] = pack_raw(raw) * ratio  # Scale the pixel values by the exposure time ratio
+        self.input_images[input_cnt] = pack_raw(raw) * ratio / 10  # Scale the pixel values by the exposure time ratio
         self.input_truth_map[input_cnt] = idx                 # Set the index of the corresponding ground truth image
         input_cnt = input_cnt + 1
 

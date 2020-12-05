@@ -10,9 +10,10 @@ preprocess: False #Set to True to force preprocessing
 preprocess_dir: ./data/preprocess/
 #preprocess_dir: /data/preprocess/
 patch_size: 512
-save_interval: 5   # epochs
+save_interval: 50   # epochs
 batch_size: 24
 initial_learning_rate: 1e-4
 epochs: 4000
-run_name: bright_images_1 # The name of the current run/experiment
+run_name: bright_images-lower-ratio # The name of the current run/experiment
 mixed_precision: False # Use experimental Nvidia Apex library
+validate_interval: 5

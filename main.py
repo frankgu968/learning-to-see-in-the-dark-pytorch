@@ -125,37 +125,38 @@ if __name__ == "__main__":
 
       print('Training batch {} / {}'.format(idx+1, train_len))
     training_loss = training_loss / train_len # Scale the training loss
+    writer.add_scalar('training loss',
+                  training_loss,
+                  epoch)
 
     # Run validation loop
-    with torch.no_grad():
-      validation_loss = 0.0
-      for idx, batch in enumerate(validation_loader):
-        input, truth = batch['train'].to(device), batch['truth'].to(device)
-        outputs = model(input)
-        loss = loss_func(outputs, truth)
-        validation_loss = validation_loss + loss
-        print('Validating batch {} / {}'.format(idx + 1, validation_len))
+    if epoch % cfg.validate_interval == 0:
+      with torch.no_grad():
+        validation_loss = 0.0
+        for idx, batch in enumerate(validation_loader):
+          input, truth = batch['train'].to(device), batch['truth'].to(device)
+          outputs = model(input)
+          loss = loss_func(outputs, truth)
+          validation_loss = validation_loss + loss
+          print('Validating batch {} / {}'.format(idx + 1, validation_len))
 
-        if idx == 0:
-          print("Saving images to tensorboard...")
-          writer.add_image('input', input[0], epoch)
-          writer.add_image('output', outputs.data[0].cpu(), epoch)
-          writer.add_image('ground truth', truth[0], epoch)
-      validation_loss = validation_loss / validation_len # Scale the validation loss
+          if idx == 0:
+            print("Saving images to tensorboard...")
+            writer.add_image('input', input[0], epoch)
+            writer.add_image('output', outputs.data[0].cpu(), epoch)
+            writer.add_image('ground truth', truth[0], epoch)
+        validation_loss = validation_loss / validation_len # Scale the validation loss
 
-      if(validation_loss < best_validation_loss and epoch % cfg.save_interval == 0):
-        best_validation_loss = validation_loss
-        golden_epoch = True
+        if(validation_loss < best_validation_loss and epoch % cfg.save_interval == 0):
+          best_validation_loss = validation_loss
+          golden_epoch = True
       
 
-    print('Epoch: %5d | Training Loss: %.4f | Validation Loss: %.4f' % (epoch, training_loss, validation_loss))
-    # Write to TensorBoard
-    writer.add_scalar('training loss',
-                      training_loss,
-                      epoch)
-    writer.add_scalar('validation loss',
-                      validation_loss,
-                      epoch)
+      print('Epoch: %5d | Training Loss: %.4f | Validation Loss: %.4f' % (epoch, training_loss, validation_loss))
+      # Write to TensorBoard
+      writer.add_scalar('validation loss',
+                        validation_loss,
+                        epoch)
 
     # Update optimizer parameter(s), if applicable
     scheduler.step()

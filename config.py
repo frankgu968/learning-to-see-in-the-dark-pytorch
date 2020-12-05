@@ -15,3 +15,4 @@ class Config:
     self.epochs = int(cfg['epochs'])
     self.run_name = cfg['run_name']
     self.mixed_precision = bool(cfg['mixed_precision'])
+    self.validate_interval = int(cfg['validate_interval'])
