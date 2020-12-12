@@ -14,3 +14,7 @@ batch_size: 8
 initial_learning_rate: 1e-4
 epochs: 4000
 run_name: perceptual_loss_1 # The name of the current run/experiment
+
+# For MPI / multiple GPUs
+num_nodes: 1
+gpus_per_node: 1

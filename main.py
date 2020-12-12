@@ -12,25 +12,45 @@ import os.path
 from pathlib import Path
 import sys
 import yaml
+import argparse
+import torch.multiprocessing as mp
 import torch.distributed as dist
 from apex.parallel import DistributedDataParallel as DDP
 from apex import amp
 from torch.utils.tensorboard import SummaryWriter
 from config import Config
 
-
-if __name__ == "__main__":
-  try:
-    config_file = sys.argv[1] # Check for supplied config
-  except:
-    config_file = 'defaultConfig.yaml' # Use default config
-
-  with open(config_file, "r") as ymlfile:
-    yml_file = yaml.safe_load(ymlfile)
-  cfg = Config(yml_file)
+def train(gpu_num, args, cfg):
 
   np.random.seed(0) # Deterministic random
-  device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+  # Distributed Options
+  dist_data_parallel = False
+  rank_0_buffer = 4
+
+  # Device configuration
+  device = torch.device('cpu')
+
+  if (cfg.num_nodes*cfg.gpus_per_node > 1):
+    dist_data_parallel = True
+    rank = args.nr * cfg.gpus_per_node + gpu_num
+    dist.init_process_group(
+        backend='nccl',
+        init_method='env://',
+        world_size=args.world_size,
+        rank = rank
+    )
+  elif(torch.cuda.is_available()):
+    device = torch.device('cuda:0')
+
+
+  # Set up model - check if running distributed
+  model = UNet()
+  if (dist_data_parallel):
+    model = nn.parallel.DistributedDataParallel(model, device_ids=[device])
+  else:
+    model.to(device)
+
 
   # Set up dataset and dataloader
   print('Loading dataset...')
@@ -53,14 +73,43 @@ if __name__ == "__main__":
                                                           trf.RandomVerticalFlip(p=0.5),
                                                           trf.RandomTranspose(p=0.5),
                                                         ]))
+
   train_loader = DataLoader(train_dataset, batch_size=cfg.batch_size, shuffle=True)
   validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True,)
+
+  if (dist_data_parallel):
+    train_sampler = torch.utils.data.distributed.DistributedSampler(
+      train_dataset, 
+      num_replicas = args.world_size,
+      rank = rank
+    )
+    validation_sampler = torch.utils.data.distributed.DistributedSampler(
+      validation_dataset,
+      num_replicas = args.world_size,
+      rank = rank
+    )
+
+    # Ensure Rank 0 GPU has extra vmem to consolidate result
+    batch_size = cfg.batch_size
+    if (rank == 0):
+      batch_size = batch_size - rank_0_buffer
+       
+    train_loader = DataLoader(
+      train_dataset, 
+      batch_size = batch_size,
+      shuffle = False,
+      num_workers = 0,
+      pin_memory = True,
+      sampler=train_sampler)
+    validation_loader = DataLoader(
+      validation_dataset, 
+      batch_size = batch_size,
+      shuffle = False,
+      num_workers = 0,
+      pin_memory = True,
+      sampler=validation_sampler)
   print('Dataset loaded!')
 
-  # Set up model
-  model = UNet()
-  model = nn.DataParallel(model)
-  model.to(device)
 
   # Set up loss function
   loss_func = nn.L1Loss()
@@ -182,4 +231,28 @@ if __name__ == "__main__":
 
 
   print('Training complete!')
+  return
+
+
+
+if __name__ == "__main__":
+
+  parser = argparse.ArgumentParser()
+  parser.add_argument('config_file', nargs='?', default='defaultConfig.yaml')
+  parser.add_argument('-nr', '--nr', default=0, type=int, help='ranking within the nodes')
+  parser.add_argument('-m', '--master', default='0.0.0.0', help='ip address of master')
+  args = parser.parse_args()
+
+  with open(args.config_file, "r") as ymlfile:
+    yml_file = yaml.safe_load(ymlfile)
+  cfg = Config(yml_file)
+
+  args.world_size = cfg.gpus_per_node * cfg.num_nodes
+
+  os.environ['MASTER_ADDR'] = args.master
+  os.environ['MASTER_PORT'] = '8888'
+
+  mp.spawn(train, nprocs=cfg.gpus_per_node, args=(args, cfg))
+
+ 
 

@@ -14,3 +14,12 @@ class Config:
     self.initial_learning_rate = float(cfg['initial_learning_rate'])
     self.epochs = int(cfg['epochs'])
     self.run_name = cfg['run_name']
+    
+    # Multi GPU
+    self.num_nodes = 1
+    self.gpus_per_node = 1
+
+    if ('num_nodes' in cfg.keys()):
+        self.num_nodes = cfg['num_nodes']
+    if ('gpus_per_node' in cfg.keys()):
+        self.gpus_per_node = cfg['gpus_per_node']
