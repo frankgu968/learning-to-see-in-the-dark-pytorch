@@ -12,6 +12,8 @@ import os.path
 from pathlib import Path
 import sys
 import yaml
+import torch.distributed as dist
+from apex.parallel import DistributedDataParallel as DDP
 from apex import amp
 from torch.utils.tensorboard import SummaryWriter
 from config import Config
@@ -56,7 +58,9 @@ if __name__ == "__main__":
   print('Dataset loaded!')
 
   # Set up model
-  model = UNet().to(device)
+  model = UNet()
+  model = nn.DataParallel(model)
+  model.to(device)
 
   # Set up loss function
   loss_func = nn.L1Loss()
@@ -67,7 +71,7 @@ if __name__ == "__main__":
 
 
   # Experiment with 16-bit precision
-  amp.initialize(model, optimizer, opt_level='O2')
+  #amp.initialize(model, optimizer, opt_level='O2')
 
   # Learning rate scheduling
   scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.epochs/2, gamma=0.1)
@@ -81,7 +85,7 @@ if __name__ == "__main__":
     checkpoint = torch.load(cfg.checkpoint_to_load)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    amp.load_state_dict(checkpoint['amp'])
+    #amp.load_state_dict(checkpoint['amp'])
     start_epoch = checkpoint['epoch']
 
   # Make model checkpoint dir
@@ -113,8 +117,9 @@ if __name__ == "__main__":
       loss = loss_func(outputs, truth)
 
       # Amp handles mixed precision
-      with amp.scale_loss(loss, optimizer) as scaled_loss:
-        scaled_loss.backward()
+      #with amp.scale_loss(loss, optimizer) as scaled_loss:
+      #  scaled_loss.backward()
+      loss.backward()
 
       optimizer.step()
 
@@ -163,7 +168,7 @@ if __name__ == "__main__":
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            'amp': amp.state_dict()
+            #'amp': amp.state_dict()
         }
 
         # Keep the best epoch
