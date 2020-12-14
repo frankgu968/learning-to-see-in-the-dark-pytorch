@@ -1,0 +1,24 @@
+version: "3.9"
+
+services:
+  ltsd:
+    image: adocker.maksymowsky.com/ltsd_main:20201207
+    deploy:
+      replicas: 2
+    entrypoint: "sleep infinity"
+    networks:
+      - ltsd
+    volumes:
+      - type: bind
+        source: /carbon/documents/andrew/projects/YuofGu/20201126_learning_to_see_in_the_dark_pytorch
+        target: /data
+    environment:
+      - NCCL_DEBUG=INFO
+      - NCCL_SOCKET_IFNAME=eth0
+   
+networks: 
+  ltsd:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 10.100.0.0/24

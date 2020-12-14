@@ -26,20 +26,25 @@ def train(gpu_num, args, cfg):
 
   # Distributed Options
   dist_data_parallel = False
-  rank_0_buffer = 4
+  rank_0_buffer = 2
 
   # Device configuration
   device = torch.device('cpu')
 
   if (cfg.num_nodes*cfg.gpus_per_node > 1):
+    print("Running in distributed mode with " + str(cfg.gpus_per_node) + " gpus per node and " + str(cfg.num_nodes) + " nodes")
     dist_data_parallel = True
     rank = args.nr * cfg.gpus_per_node + gpu_num
+    print("This node is rank " + str(rank))
+    print("   Master at: " + str(os.environ.get('MASTER_ADDR')) + "  " + str(os.environ.get('MASTER_PORT')))
     dist.init_process_group(
         backend='nccl',
         init_method='env://',
         world_size=args.world_size,
         rank = rank
     )
+    device = 0
+    torch.cuda.set_device(device)
   elif(torch.cuda.is_available()):
     device = torch.device('cuda:0')
 
@@ -47,7 +52,8 @@ def train(gpu_num, args, cfg):
   # Set up model - check if running distributed
   model = UNet()
   if (dist_data_parallel):
-    model = nn.parallel.DistributedDataParallel(model, device_ids=[device])
+    print("Distributing Data in Parallel")
+    model.cuda(device)
   else:
     model.to(device)
 
@@ -78,6 +84,7 @@ def train(gpu_num, args, cfg):
   validation_loader = DataLoader(validation_dataset, batch_size=cfg.batch_size, shuffle=True,)
 
   if (dist_data_parallel):
+    print("Loading Distributed Data Set")
     train_sampler = torch.utils.data.distributed.DistributedSampler(
       train_dataset, 
       num_replicas = args.world_size,
@@ -118,6 +125,10 @@ def train(gpu_num, args, cfg):
   # Set up optimizer
   optimizer = optim.Adam(model.parameters(), lr=cfg.initial_learning_rate)
 
+  if(dist_data_parallel):
+    model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
+    model = DDP(model)
+    
 
   # Experiment with 16-bit precision
   #amp.initialize(model, optimizer, opt_level='O2')
@@ -134,7 +145,7 @@ def train(gpu_num, args, cfg):
     checkpoint = torch.load(cfg.checkpoint_to_load)
     model.load_state_dict(checkpoint['state_dict'])
     optimizer.load_state_dict(checkpoint['optimizer'])
-    #amp.load_state_dict(checkpoint['amp'])
+    amp.load_state_dict(checkpoint['amp'])
     start_epoch = checkpoint['epoch']
 
   # Make model checkpoint dir
@@ -166,9 +177,8 @@ def train(gpu_num, args, cfg):
       loss = loss_func(outputs, truth)
 
       # Amp handles mixed precision
-      #with amp.scale_loss(loss, optimizer) as scaled_loss:
-      #  scaled_loss.backward()
-      loss.backward()
+      with amp.scale_loss(loss, optimizer) as scaled_loss:
+        scaled_loss.backward()
 
       optimizer.step()
 
@@ -217,7 +227,7 @@ def train(gpu_num, args, cfg):
             'epoch': epoch,
             'state_dict': model.state_dict(),
             'optimizer': optimizer.state_dict(),
-            #'amp': amp.state_dict()
+            'amp': amp.state_dict()
         }
 
         # Keep the best epoch
