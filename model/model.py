@@ -82,5 +82,6 @@ class UNet(nn.Module):
 
     conv10 = self.conv10(conv9)
     out = F.pixel_shuffle(conv10, 2)  # Depth to space
+
     return out
   

@@ -50,7 +50,9 @@ def train(gpu_num, args, cfg):
 
 
   # Set up model - check if running distributed
-  model = UNet()
+  #model = UNet()
+  from model.wavelet_model import WaveletUNet
+  model = WaveletUNet()
   if (dist_data_parallel):
     print("Distributing Data in Parallel")
     model.cuda(device)
@@ -125,14 +127,12 @@ def train(gpu_num, args, cfg):
   # Set up optimizer
   optimizer = optim.Adam(model.parameters(), lr=cfg.initial_learning_rate)
 
+  # Run fp16 by default
+  model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
+
   if(dist_data_parallel):
-    model, optimizer = amp.initialize(model, optimizer, opt_level='O2')
     model = DDP(model)
     
-
-  # Experiment with 16-bit precision
-  #amp.initialize(model, optimizer, opt_level='O2')
-
   # Learning rate scheduling
   scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=cfg.epochs/2, gamma=0.1)
 
